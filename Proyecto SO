@@ -138,6 +138,11 @@ case $opcion in
                     echo "El archivo de agenda no existe."
                 fi
                 ;;
+            *)
+                echo "Opción Incorrecta"
+                ;;
+        esac
+        ;;
     4)
         echo "Menu Permisos"
         echo "a)Cambiar permisos a un archivo"
