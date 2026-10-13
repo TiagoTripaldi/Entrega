@@ -1,0 +1,264 @@
+#!/bin/bash
+
+LOG_FILE="sistema.log"
+
+echo "Menu Proyecto"
+echo "1)Acciones sobre directorios"
+echo "2)Acciones sobre archivos"
+echo "3)Acciones sobre archivo tipo agenda"
+echo "4)Cambiar los permisos de un archivo o directorio"
+echo "5)Mostrar la fecha y/o la hora del Sistema Operativo"
+echo "6)Mostrar en formato calendario los meses del año"
+echo "7)Archivo de log"
+read -p "Opcion:" opcion
+
+case $opcion in
+    1)
+        echo "Menu Directorios"
+        echo "a)Crear Directorio"
+        echo "b)Eliminar Directorio"
+        read -p "Opcion:" opcionDirectorio
+        case $opcionDirectorio in
+            a)
+                read -p "Nombre del directorio nuevo: " nombreDirectorio
+                if [ -d "$nombreDirectorio" ]; then
+                    echo "El directorio ya existe"
+                else
+                    mkdir "$nombreDirectorio"
+                    echo "Directorio creado"
+                    echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Directorio | Crear directorio: $nombreDirectorio" >> "$LOG_FILE"
+                fi
+                ;;
+            b)
+                read -p "Nombre del directorio a borrar: " nombreDirectorio
+                if [ -d "$nombreDirectorio" ]; then
+                    rmdir "$nombreDirectorio"
+                    echo "Directorio eliminado"
+                    echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Directorio | Eliminar directorio: $nombreDirectorio" >> "$LOG_FILE"
+                else
+                    echo "Aviso: El directorio no existe"
+                fi
+                ;;
+        esac
+        ;;
+    2)
+        echo "Menu Archivo"
+        echo "a)Eliminar un archivo"
+        echo "b)Copiar un archivo"
+        echo "c)Mover un archivo"
+        echo "d)Ver permisos de un archivo"
+        echo "e)Listar archivos de un directorio"
+        read -p "Opcion: " opcionArchivo
+        case $opcionArchivo in
+            a)
+                read -p "Nombre del archivo a eliminar: " archivo
+                rm -i "$archivo"
+                echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Archivo | Eliminar archivo: $archivo" >> "$LOG_FILE"
+                ;;
+            b)
+                read -p "Archivo de origen: " origen
+                read -p "Ruta de destino: " destino
+                cp "$origen" "$destino"
+                echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Archivo | Copiar $origen a $destino" >> "$LOG_FILE"
+                ;;
+            c)
+                read -p "Archivo de origen: " origen
+                read -p "Ruta de destino: " destino
+                mv "$origen" "$destino"
+                echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Archivo | Mover $origen a $destino" >> "$LOG_FILE"
+                ;;
+            d)
+                read -p "Nombre del archivo: " archivo
+                ls -lh "$archivo"
+                echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Archivo | Ver permisos de: $archivo" >> "$LOG_FILE"
+                ;;
+            e)
+                read -p "Ruta del directorio a listar: " directorio
+                ls "$directorio"
+                echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Archivo | Listar directorio: $directorio" >> "$LOG_FILE"
+                ;;
+        esac
+        ;;
+    3)
+        echo "Menu Agenda"
+        echo "a)Registrar persona"
+        echo "b)Ver contenido completo"
+        echo "c)Ver algunas lineas en particular"
+        echo "d)Buscar información por CI"
+        echo "e)Eliminar una linea por CI"
+        echo "f)Modificar teléfono por CI"
+        read -p "Opcion: " opcionAgenda
+        case $opcionAgenda in
+            a)
+                read -p "CI: " ci
+                read -p "Apellido: " apellido
+                read -p "Nombre: " nombre
+                read -p "Teléfono: " tel
+                read -p "Fecha de nacimiento (dd/mm/aaaa): " fecha
+                read -p "Edad: " edad
+                echo "${ci}:${nombre}:${apellido}:${tel}:${fecha}:${edad}" >> agenda.txt
+                echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Agenda | Registrar persona CI: $ci" >> "$LOG_FILE"
+                ;;
+            b)
+                cat agenda.txt
+                echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Agenda | Ver contenido completo" >> "$LOG_FILE"
+                ;;
+            c)
+                read -p "Linea inicial: " ini
+                read -p "Linea final: " fin
+                sed -n "${ini},${fin}p" agenda.txt
+                echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Agenda | Ver líneas de $ini a $fin" >> "$LOG_FILE"
+                ;;
+            d)
+                read -p "CI: " ci
+                read -p "Campo: " campo
+                grep "^${ci}:" agenda.txt | cut -d ':' -f"$campo"
+                echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Agenda | Buscar CI: $ci campo: $campo" >> "$LOG_FILE"
+                ;;
+            e)
+                read -p "CI a borrar: " ci
+                sed -i "/^${ci}:/d" agenda.txt
+                echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Agenda | Eliminar por CI: $ci" >> "$LOG_FILE"
+                ;;
+            f)
+               if [ -f "$AGENDA_FILE" ]; then
+                    read -p "CI: " ci
+                    read -p "Nuevo Teléfono: " nuevo_tel
+                    linea_vieja=$(grep "^${ci}:" "$AGENDA_FILE")
+                    if [ -n "$linea_vieja" ]; then
+                        inicio_linea=$(echo "$linea_vieja" | cut -d ':' -f1-3)
+                        fin_linea=$(echo "$linea_vieja" | cut -d ':' -f5-6)
+                        sed -i "s|${linea_vieja}|${inicio_linea}:${nuevo_tel}:${fin_linea}|g" "$AGENDA_FILE"
+                        echo "Teléfono modificado con éxito."
+                        echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Agenda | Modificar teléfono CI: $ci" >> "$LOG_FILE"
+                    else
+                        echo "No se encontró un registro con esa CI."
+                    fi
+                else
+                    echo "El archivo de agenda no existe."
+                fi
+                ;;
+    4)
+        echo "Menu Permisos"
+        echo "a)Cambiar permisos a un archivo"
+        echo "b)Cambiar permisos a un directorio"
+        read -p "Opcion: " opcionPermisos
+        case $opcionPermisos in
+            a|b)
+                read -p "Nombre del archivo o directorio: " archivo
+                read -p "Nuevos permisos (ej: 755 o 644): " numero
+                chmod "$numero" "$archivo"
+                echo "Permisos actualizados"
+                echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Permisos | Cambiar a $numero en $archivo" >> "$LOG_FILE"
+                ;;
+            *)
+                echo "Opcion incorrecta"
+                ;;
+        esac
+        ;;
+    5)
+        echo "Menu Fecha"
+        echo "a)Formato año/mes/dia"
+        echo "b)Formato frase largo"
+        echo "c)Dias desde el inicio del año"
+        read -p "Opcion: " opcionFecha
+        case $opcionFecha in
+            a)
+                date +"%Y/%m/%d"
+                echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Fecha | Formato AAAA/MM/DD" >> "$LOG_FILE"
+                ;;
+            b)
+                echo "Hoy es $(date +"%d de %B del %Y")"
+                echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Fecha | Formato frase larga" >> "$LOG_FILE"
+                ;;
+            c)
+                echo "Han pasado $(date +"%j") dias"
+                echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Fecha | Días desde inicio de año" >> "$LOG_FILE"
+                ;;
+            *)
+                echo "Opcion incorrecta"
+                ;;
+        esac
+        ;;
+    6)
+        echo "Menu Calendario"
+        echo "a)Ver un mes especifico"
+        echo "b)Ver el año completo"
+        read -p "Opcion: " opcionCalendario
+        case $opcionCalendario in
+            a)
+                read -p "Numero de mes: " mes
+                read -p "Año: " anio
+                cal "$mes" "$anio"
+                echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Calendario | Mes $mes de $anio" >> "$LOG_FILE"
+                ;;
+            b)
+                read -p "Año: " anio
+                cal "$anio"
+                echo "$(date +'%Y-%m-%d | %H:%M:%S') | $USER | Calendario | Año completo $anio" >> "$LOG_FILE"
+                ;;
+            *)
+                echo "Opcion incorrecta"
+                ;;
+        esac
+        ;;
+    7)
+        echo "Menu Log"
+        echo "a)Mostrar registro completo"
+        echo "b)Mostrar registros entre fechas"
+        echo "c)Mostrar por tipo de acción"
+        echo "d)Mostrar por usuario"
+        echo "e)Eliminar log con contraseña"
+        read -p "Opcion: " opcionLog
+        case $opcionLog in
+            a)
+                if [ -f "$LOG_FILE" ]; then
+                    cat "$LOG_FILE"
+                else
+                    echo "El archivo de log está vacío."
+                fi
+                ;;
+            b)
+                read -p "Fecha inicio (AAAA-MM-DD): " fini
+                read -p "Fecha fin (AAAA-MM-DD): " ffin
+                if [ -f "$LOG_FILE" ]; then
+                    awk -F' \\| ' -v ini="$fini" -v fin="$ffin" '$1 >= ini && $1 <= fin' "$LOG_FILE"
+                else
+                    echo "No hay registros."
+                fi
+                ;;
+            c)
+                read -p "Tipo de acción: " tipo
+                if [ -f "$LOG_FILE" ]; then
+                    grep " | ${tipo} |" "$LOG_FILE"
+                else
+                    echo "No hay registros."
+                fi
+                ;;
+            d)
+                read -p "Usuario: " usr
+                if [ -f "$LOG_FILE" ]; then
+                    grep " | ${usr} |" "$LOG_FILE"
+                else
+                    echo "No hay registros."
+                fi
+                ;;
+            e)
+                read -s -p "Contraseña: " pass
+                echo ""
+                if [ "$pass" = "admin123" ]; then
+                    rm -f "$LOG_FILE"
+                    echo "Log eliminado con éxito"
+                else
+                    echo "Contraseña incorrecta"
+                fi
+                ;;
+            *)
+                echo "Opcion incorrecta"
+                ;;
+        esac
+        ;;
+    *)
+        echo "Opción principal incorrecta"
+        ;;
+esac
